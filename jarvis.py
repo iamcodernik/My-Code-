@@ -1,113 +1,85 @@
-# pip install pyaudio
-
-import pyttsx3 #pip install pyttsx3
-import speech_recognition as sr #pip install speechRecognition
-import datetime
-import wikipedia #pip install wikipedia
-import webbrowser
 import os
+import datetime
+import pyttsx3
+import speech_recognition as sr
+import wikipedia
+import webbrowser
 import smtplib
 
+# Initialize TTS Engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
-# print(voices[1].id)
 engine.setProperty('voice', voices[0].id)
-
 
 def speak(audio):
     engine.say(audio)
     engine.runAndWait()
 
-
-def wishMe():
+def wish_me():
     hour = int(datetime.datetime.now().hour)
-    if hour>=0 and hour<12:
-        speak("Good Morning!")
+    greeting = "Good Morning!" if hour < 12 else "Good Afternoon!" if hour < 18 else "Good Evening!"
+    speak(greeting)
+    speak("I am Jarvis Sir. Please tell me how may I help you")
 
-    elif hour>=12 and hour<18:
-        speak("Good Afternoon!")   
-
-    else:
-        speak("Good Evening!")  
-
-    speak("I am Jarvis Sir. Please tell me how may I help you")       
-
-def takeCommand():
-    #It takes microphone input from the user and returns string output
-
-    r = sr.Recognizer()
+def take_command():
+    # Takes microphone input and returns a string output
+    recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         print("Listening...")
-        r.pause_threshold = 1
-        audio = r.listen(source)
-
+        recognizer.pause_threshold = 1
+        audio = recognizer.listen(source)
     try:
-        print("Recognizing...")    
-        query = r.recognize_google(audio, language='en-in')
-        print(f"User said: {query}\n")
-
+        print("Recognizing...")
+        query = recognizer.recognize_google(audio, language='en-in')
+        print(f"User said: {query}")
+        return query.lower()
     except Exception as e:
-        # print(e)    
-        print("Say that again please...")  
+        print("Could not understand audio, please repeat.")
         return "None"
-    return query
 
-def sendEmail(to, content):
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.ehlo()
-    server.starttls()
-    server.login('youremail@gmail.com', 'your-password')
-    server.sendmail('youremail@gmail.com', to, content)
-    server.close()
+def open_website(site_name):
+    url = f"{site_name}.com"
+    webbrowser.open(url)
+    speak(f"Opening {site_name}")
+
+def search_wikipedia(query):
+    speak('Searching Wikipedia...')
+    query = query.replace("wikipedia", "")
+    results = wikipedia.summary(query, sentences=2)
+    speak("According to Wikipedia")
+    print(results)
+    speak(results)
+
+def send_email(to, content):
+    # Replace with your credentials securely
+    email = os.getenv("EMAIL_USER")
+    password = os.getenv("EMAIL_PASSWORD")
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(email, to, content)
+        server.close()
+        speak("Email has been sent!")
+    except Exception as e:
+        print(e)
+        speak("Sorry, I am not able to send this email")
 
 if __name__ == "__main__":
-    wishMe()
+    wish_me()
     while True:
-    # if 1:
-        query = takeCommand().lower()
-
-        # Logic for executing tasks based on query
+        query = take_command()
         if 'wikipedia' in query:
-            speak('Searching Wikipedia...')
-            query = query.replace("wikipedia", "")
-            results = wikipedia.summary(query, sentences=2)
-            speak("According to Wikipedia")
-            print(results)
-            speak(results)
-
+            search_wikipedia(query)
         elif 'open youtube' in query:
-            webbrowser.open("youtube.com")
-
-        elif 'open google' in query:
-            webbrowser.open("google.com")
-
-        elif 'open stackoverflow' in query:
-            webbrowser.open("stackoverflow.com")   
-
-
+            open_website("youtube")
         elif 'play music' in query:
             music_dir = 'D:\\Non Critical\\songs\\Favorite Songs2'
             songs = os.listdir(music_dir)
-            print(songs)    
             os.startfile(os.path.join(music_dir, songs[0]))
-
         elif 'the time' in query:
-            strTime = datetime.datetime.now().strftime("%H:%M:%S")    
-            speak(f"Sir, the time is {strTime}")
-
-        elif 'open code' in query:
-            codePath = "C:\\Users\\Haris\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
-            os.startfile(codePath)
-
-        elif 'email to harry' in query:
-            try:
-                speak("What should I say?")
-                content = takeCommand()
-                to = "harryyourEmail@gmail.com"    
-                sendEmail(to, content)
-                speak("Email has been sent!")
-            except Exception as e:
-                print(e)
-                speak("Sorry my friend harry bhai. I am not able to send this email")    
+            speak(f"The time is {datetime.datetime.now().strftime('%H:%M:%S')}")
+        # Add more elif statements for other commands
         else:
-            print("No query matched")
+            speak("No matching command found")
